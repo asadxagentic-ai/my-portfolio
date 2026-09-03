@@ -1,0 +1,1 @@
+style: Position hero subheadlines upward on laptop and PC viewports to clear shoulder overlap

@@ -1,0 +1,1 @@
+fix: Remove .env.example file and ignore all .env files completely

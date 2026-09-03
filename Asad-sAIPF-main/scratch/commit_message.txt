@@ -1,0 +1,1 @@
+feat: Add All Projects showcase page, custom 404 page, admin portal, Supabase integration, and responsive layout fixes
