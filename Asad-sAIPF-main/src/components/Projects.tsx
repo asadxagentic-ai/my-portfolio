@@ -107,7 +107,7 @@ import { useDataContext, DEFAULT_PROJECTS } from '../context/DataContext';
 export function Projects() {
   const { projects } = useDataContext();
   const PROJECT_DATA = projects && projects.length > 0 ? projects : DEFAULT_PROJECTS;
-  const { motionEnabled, scrollTo } = useScrollSystem();
+  const { motionEnabled, scrollTo, resetScroll } = useScrollSystem();
   const [activeProjectIndex, setActiveProjectIndex] = useState<number | null>(null);
   const [isZoomOpen, setIsZoomOpen] = useState<boolean>(false);
   const [zoomScale, setZoomScale] = useState<number>(1);
@@ -179,6 +179,7 @@ export function Projects() {
               href="#all-projects"
               onClick={(e) => {
                 e.preventDefault();
+                resetScroll();
                 window.location.hash = '#all-projects';
               }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#141419] hover:bg-[#f05a28] border border-white/10 text-xs font-mono font-bold text-white uppercase tracking-wider transition-all shadow-lg group cursor-pointer"
@@ -216,6 +217,7 @@ export function Projects() {
                     href="#all-projects"
                     onClick={(e) => {
                       e.preventDefault();
+                      resetScroll();
                       window.location.hash = '#all-projects';
                     }}
                     className="px-6 py-3 bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 text-white font-bold text-[11px] uppercase tracking-widest rounded-full cursor-pointer transition-all"

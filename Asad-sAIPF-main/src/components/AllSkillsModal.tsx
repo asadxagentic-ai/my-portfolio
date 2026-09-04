@@ -15,7 +15,7 @@ import {
   Globe,
   Braces
 } from 'lucide-react';
-import { useDataContext, SkillItem } from '../context/DataContext';
+import { useDataContext, SkillItem, normalizeCategory, getCategoryLabel } from '../context/DataContext';
 import { SKILLS as STATIC_SKILLS } from './TechnicalExpertise';
 
 interface AllSkillsModalProps {
@@ -52,7 +52,8 @@ export const AllSkillsModal: React.FC<AllSkillsModalProps> = ({ isOpen, onClose 
   const categories = useMemo(() => {
     const set = new Set<string>();
     allSkills.forEach(s => {
-      if (s.category) set.add(s.category);
+      const norm = normalizeCategory(s.category, s.id);
+      if (norm) set.add(norm);
     });
     return ['All', ...Array.from(set)];
   }, [allSkills]);
@@ -60,14 +61,17 @@ export const AllSkillsModal: React.FC<AllSkillsModalProps> = ({ isOpen, onClose 
   // Filter skills by search query and category
   const filteredSkills = useMemo(() => {
     return allSkills.filter(skill => {
+      const normCat = normalizeCategory(skill.category, skill.id);
+      const catLabel = getCategoryLabel(normCat);
       const matchesSearch =
         skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         skill.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        skill.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        normCat.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        catLabel.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (Array.isArray(skill.useCases) && skill.useCases.some(u => u.toLowerCase().includes(searchQuery.toLowerCase()))) ||
         (Array.isArray(skill.relatedTech) && skill.relatedTech.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())));
 
-      const matchesCat = selectedCategory === 'All' || skill.category === selectedCategory;
+      const matchesCat = selectedCategory === 'All' || normCat === selectedCategory;
 
       return matchesSearch && matchesCat;
     });
@@ -166,7 +170,7 @@ export const AllSkillsModal: React.FC<AllSkillsModalProps> = ({ isOpen, onClose 
                           : 'bg-white/5 text-zinc-400 hover:text-white border border-white/5'
                       }`}
                     >
-                      {cat}
+                      {cat === 'All' ? 'All' : getCategoryLabel(cat)}
                     </button>
                   );
                 })}
@@ -219,7 +223,7 @@ export const AllSkillsModal: React.FC<AllSkillsModalProps> = ({ isOpen, onClose 
                           </div>
 
                           <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 font-mono text-[9px] text-orange-400 font-bold uppercase tracking-wider shrink-0">
-                            {skill.category}
+                            {getCategoryLabel(normalizeCategory(skill.category, skill.id))}
                           </span>
                         </div>
 

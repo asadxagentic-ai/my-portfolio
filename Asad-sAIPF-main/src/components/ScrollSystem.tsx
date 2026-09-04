@@ -17,15 +17,23 @@ import { motion, useInView } from "motion/react";
 interface ScrollSystemContextProps {
   motionEnabled: boolean;
   setMotionEnabled: (val: boolean) => void;
-  scrollTo: (target: string | HTMLElement, options?: any) => void;
+  scrollTo: (target: string | HTMLElement | number, options?: any) => void;
+  resetScroll: () => void;
 }
 
 const ScrollSystemContext = createContext<ScrollSystemContextProps>({
   motionEnabled: true,
   setMotionEnabled: () => {},
   scrollTo: (target) => {
+    if (target === 0 || target === 'top') {
+      window.scrollTo(0, 0);
+      return;
+    }
     const el = typeof target === 'string' ? document.querySelector(target) : target;
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    if (el instanceof HTMLElement) el.scrollIntoView({ behavior: 'smooth' });
+  },
+  resetScroll: () => {
+    window.scrollTo(0, 0);
   }
 });
 
@@ -39,14 +47,27 @@ export function ScrollSystemProvider({ children }: { children: React.ReactNode }
   const [motionEnabled, setMotionEnabled] = useState(true);
   const lenisRef = useRef<Lenis | null>(null);
 
-  const scrollTo = (target: string | HTMLElement, options?: any) => {
+  const resetScroll = () => {
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(0, { immediate: true });
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as any });
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+  };
+
+  const scrollTo = (target: string | HTMLElement | number, options?: any) => {
+    if (target === 0 || target === 'top') {
+      resetScroll();
+      return;
+    }
     const selector = typeof target === 'string' && !target.startsWith('#') && !target.startsWith('.') ? `#${target}` : target;
     if (lenisRef.current && motionEnabled) {
-      lenisRef.current.scrollTo(selector, options);
+      lenisRef.current.scrollTo(selector as any, options);
     } else {
       const el = typeof selector === 'string' ? document.querySelector(selector) : selector;
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
+      if (el && typeof el === 'object' && 'scrollIntoView' in el) {
+        (el as HTMLElement).scrollIntoView({ behavior: 'smooth' });
       }
     }
   };
@@ -110,7 +131,7 @@ export function ScrollSystemProvider({ children }: { children: React.ReactNode }
   }, []);
 
   return (
-    <ScrollSystemContext.Provider value={{ motionEnabled, setMotionEnabled, scrollTo }}>
+    <ScrollSystemContext.Provider value={{ motionEnabled, setMotionEnabled, scrollTo, resetScroll }}>
       {children}
     </ScrollSystemContext.Provider>
   );

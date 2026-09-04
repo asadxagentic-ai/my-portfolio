@@ -466,19 +466,22 @@ function playUiChime(freq = 520) {
    CONTINUOUS SCROLLING SKILL TICKER STRIP
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useDataContext, DEFAULT_SKILLS } from '../context/DataContext';
+import { useDataContext, DEFAULT_SKILLS, normalizeCategory, getCategoryLabel } from '../context/DataContext';
 
 function ContinuousSkillStrip({
   activeId,
   onSelect,
-  soundEnabled
+  soundEnabled,
+  categoryFilter = 'all'
 }: {
   activeId: string;
   onSelect: (id: string) => void;
   soundEnabled: boolean;
+  categoryFilter?: string;
 }) {
   const { skills: SKILLS } = useDataContext();
-  const doubledSkills = [...SKILLS, ...SKILLS, ...SKILLS];
+  const displaySkills = SKILLS && SKILLS.length > 0 ? SKILLS : DEFAULT_SKILLS;
+  const doubledSkills = [...displaySkills, ...displaySkills, ...displaySkills];
 
   return (
     <motion.div 
@@ -508,6 +511,9 @@ function ContinuousSkillStrip({
         >
           {doubledSkills.map((skill, index) => {
             const isActive = skill.id === activeId;
+            const normCat = normalizeCategory(skill.category, skill.id);
+            const isDimmed = categoryFilter !== 'all' && normCat !== categoryFilter;
+
             return (
               <React.Fragment key={`strip-${skill.id}-${index}`}>
                 <button
@@ -516,7 +522,9 @@ function ContinuousSkillStrip({
                     if (soundEnabled) playUiChime(640);
                     onSelect(skill.id);
                   }}
-                  className="relative flex items-center gap-3 group outline-none cursor-pointer border-none bg-transparent py-1 px-2 select-none"
+                  className={`relative flex items-center gap-3 group outline-none cursor-pointer border-none bg-transparent py-1 px-2 select-none transition-opacity duration-300 ${
+                    isDimmed ? 'opacity-35 hover:opacity-100' : 'opacity-100'
+                  }`}
                 >
                   <span 
                     className={`text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-wider transition-all duration-300 ${
@@ -556,14 +564,40 @@ function ContinuousSkillStrip({
 
 export function TechnicalExpertise() {
   const { skills: SKILLS } = useDataContext();
-  const [activeSkillId, setActiveSkillId] = useState<string>(SKILLS[0]?.id || 'ai-agents');
+  const displaySkills = SKILLS && SKILLS.length > 0 ? SKILLS : DEFAULT_SKILLS;
+  const [activeSkillId, setActiveSkillId] = useState<string>(displaySkills[0]?.id || 'ai-agents');
   const [cardTab, setCardTab] = useState<'overview' | 'code'>('overview');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1280);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
 
+  const activeSkill = displaySkills.find((s) => s.id === activeSkillId) || displaySkills[0];
 
+  const handleCategoryChange = (catId: string) => {
+    if (soundEnabled) playUiChime(520);
+    setCategoryFilter(catId);
+    if (catId !== 'all') {
+      const activeNormCat = normalizeCategory(activeSkill.category, activeSkill.id);
+      if (activeNormCat !== catId) {
+        const firstMatching = displaySkills.find(
+          (s) => normalizeCategory(s.category, s.id) === catId
+        );
+        if (firstMatching) {
+          setActiveSkillId(firstMatching.id);
+        }
+      }
+    }
+  };
+
+  const categoryCounts = React.useMemo(() => {
+    return {
+      all: displaySkills.length,
+      'ai-core': displaySkills.filter(s => normalizeCategory(s.category, s.id) === 'ai-core').length,
+      frameworks: displaySkills.filter(s => normalizeCategory(s.category, s.id) === 'frameworks').length,
+      engineering: displaySkills.filter(s => normalizeCategory(s.category, s.id) === 'engineering').length,
+    };
+  }, [displaySkills]);
 
   const handleCopyCode = (code: string) => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -643,10 +677,6 @@ export function TechnicalExpertise() {
         return skill.orbitAngle || 0;
     }
   };
-
-  // Calculate coordinates for all 9 core skill nodes
-  const displaySkills = SKILLS && SKILLS.length > 0 ? SKILLS : DEFAULT_SKILLS;
-  const activeSkill = displaySkills.find((s) => s.id === activeSkillId) || displaySkills[0];
 
   const skillCoords = displaySkills.map((skill) => {
     const angle = getSkillAngle(skill);
@@ -777,7 +807,7 @@ export function TechnicalExpertise() {
         {/* Category Filter Pills */}
         <div className="flex flex-wrap items-center justify-start gap-3 max-w-full">
           <motion.div 
-            className="inline-flex flex-wrap justify-start items-center gap-1 p-1 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/90 shadow-sm max-w-full ml-3 sm:ml-6"
+            className="inline-flex flex-wrap justify-start items-center gap-1.5 p-1 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/90 shadow-sm max-w-full ml-3 sm:ml-6"
             initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -790,17 +820,18 @@ export function TechnicalExpertise() {
               { id: 'engineering', label: 'APIs & Backend' }
             ].map((cat) => {
               const isCatActive = categoryFilter === cat.id;
+              const count = categoryCounts[cat.id as keyof typeof categoryCounts] ?? 0;
               return (
                 <button
                   key={cat.id}
-                  onClick={() => setCategoryFilter(cat.id)}
-                  className={`px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                  onClick={() => handleCategoryChange(cat.id)}
+                  className={`px-3 py-1.5 rounded-full text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 select-none ${
                     isCatActive
-                      ? 'bg-slate-900 text-white shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                      ? 'bg-slate-900 text-white shadow-sm ring-2 ring-slate-900/10'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/90'
                   }`}
                 >
-                  {cat.label}
+                  <span>{cat.label}</span>
                 </button>
               );
             })}
@@ -853,6 +884,10 @@ export function TechnicalExpertise() {
             {/* Spoke Rays connecting Center Robot Core to each technology node */}
             {skillCoords.map((coord) => {
               const isActive = coord.id === activeSkillId;
+              const coordSkill = displaySkills.find((s) => s.id === coord.id);
+              const normCat = normalizeCategory(coordSkill?.category, coord.id);
+              const isDimmedRay = categoryFilter !== 'all' && normCat !== categoryFilter;
+
               return (
                 <g key={`ray-${coord.id}`}>
                   <line
@@ -862,7 +897,7 @@ export function TechnicalExpertise() {
                     y2={coord.y}
                     stroke={isActive ? '#f05a28' : '#cbd5e1'}
                     strokeWidth={isActive ? 3 : 1}
-                    strokeOpacity={isActive ? 0.95 : 0.25}
+                    strokeOpacity={isActive ? 0.95 : isDimmedRay ? 0.08 : 0.35}
                     strokeDasharray={isActive ? 'none' : '4 4'}
                   />
                   {isActive && (
@@ -878,7 +913,8 @@ export function TechnicalExpertise() {
                     cx={coord.x}
                     cy={coord.y}
                     r={isActive ? 6 : 3.5}
-                    fill={isActive ? '#f05a28' : '#94a3b8'}
+                    fill={isActive ? '#f05a28' : isDimmedRay ? '#cbd5e1' : '#94a3b8'}
+                    opacity={isDimmedRay ? 0.4 : 1}
                   />
                 </g>
               );
@@ -926,7 +962,8 @@ export function TechnicalExpertise() {
           {/* Orbiting Technology Nodes */}
           {displaySkills.map((skill) => {
             const isActive = skill.id === activeSkillId;
-            const isDimmed = categoryFilter !== 'all' && skill.category !== categoryFilter;
+            const normCat = normalizeCategory(skill.category, skill.id);
+            const isDimmed = categoryFilter !== 'all' && normCat !== categoryFilter;
             const angle = getSkillAngle(skill);
             const rad = (angle * Math.PI) / 180;
             const x = Math.cos(rad) * RX;
@@ -938,7 +975,7 @@ export function TechnicalExpertise() {
                 className={`absolute -translate-x-1/2 -translate-y-1/2 transition-[opacity,transform] duration-300 ${
                   isActive ? 'z-30' : 'z-20'
                 } ${
-                  isDimmed ? 'opacity-30 scale-85 grayscale' : 'opacity-100'
+                  isDimmed ? 'opacity-30 scale-85 grayscale hover:opacity-80 hover:grayscale-0' : 'opacity-100'
                 }`}
                 style={{
                   left: `calc(50% + ${x}px)`,
@@ -950,6 +987,9 @@ export function TechnicalExpertise() {
                   onClick={() => {
                     if (soundEnabled) playUiChime(640);
                     setActiveSkillId(skill.id);
+                    if (isDimmed) {
+                      setCategoryFilter(normCat);
+                    }
                   }}
                   className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl cursor-pointer select-none transition-all duration-300 border outline-none focus:outline-none ${
                     isActive
@@ -967,7 +1007,7 @@ export function TechnicalExpertise() {
                       {skill.name}
                     </span>
                     <span className="text-[9px] text-slate-500 font-medium leading-tight mt-0.5 whitespace-nowrap max-w-[105px] truncate">
-                      {skill.subtitle || skill.category}
+                      {skill.subtitle || getCategoryLabel(normCat)}
                     </span>
                   </div>
                 </motion.button>
@@ -1004,7 +1044,16 @@ export function TechnicalExpertise() {
                 <div className="flex items-center gap-1.5">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100/90 border border-slate-200/70 text-[9px] font-mono font-bold uppercase tracking-wider text-slate-700">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#f05a28] animate-pulse" />
-                    <span>NODE // {activeSkill.category === 'ai-core' ? 'AI CORE' : activeSkill.category === 'frameworks' ? 'FRAMEWORKS' : 'ENGINEERING'}</span>
+                    <span>
+                      NODE // {
+                        (() => {
+                          const cat = normalizeCategory(activeSkill.category, activeSkill.id);
+                          if (cat === 'ai-core') return 'AI CORE';
+                          if (cat === 'frameworks') return 'FRAMEWORKS';
+                          return 'APIs & BACKEND';
+                        })()
+                      }
+                    </span>
                   </span>
                 </div>
 
@@ -1048,7 +1097,7 @@ export function TechnicalExpertise() {
                     </span>
                   </div>
                   <p className="text-[11.5px] font-semibold text-[#f05a28] truncate mt-0.5">
-                    {activeSkill.subtitle || activeSkill.category}
+                    {activeSkill.subtitle || getCategoryLabel(normalizeCategory(activeSkill.category, activeSkill.id))}
                   </p>
                 </div>
               </div>
@@ -1173,8 +1222,18 @@ export function TechnicalExpertise() {
       {/* CONTINUOUS SCROLLING SKILL TICKER STRIP (Click-only card selection) */}
       <ContinuousSkillStrip 
         activeId={activeSkillId} 
-        onSelect={setActiveSkillId} 
+        onSelect={(id) => {
+          setActiveSkillId(id);
+          const clickedSkill = displaySkills.find((s) => s.id === id);
+          if (clickedSkill && categoryFilter !== 'all') {
+            const norm = normalizeCategory(clickedSkill.category, clickedSkill.id);
+            if (norm !== categoryFilter) {
+              setCategoryFilter(norm);
+            }
+          }
+        }} 
         soundEnabled={soundEnabled}
+        categoryFilter={categoryFilter}
       />
 
     </section>

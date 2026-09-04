@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, 
@@ -14,6 +14,7 @@ import {
   FolderGit2
 } from 'lucide-react';
 import { useDataContext, DEFAULT_PROJECTS } from '../context/DataContext';
+import { useScrollSystem } from './ScrollSystem';
 import { getTechLogo } from '../lib/techLogos';
 
 interface ProjectItem {
@@ -30,6 +31,7 @@ interface ProjectItem {
 
 export const AllProjects: React.FC = () => {
   const { projects: contextProjects } = useDataContext();
+  const { resetScroll } = useScrollSystem();
   const allProjectsList = useMemo(() => {
     return contextProjects && contextProjects.length > 0 ? contextProjects : DEFAULT_PROJECTS;
   }, [contextProjects]);
@@ -37,6 +39,20 @@ export const AllProjects: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string>('All');
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
+
+  // Guarantee that navigating to All Projects starts immediately at the very top of the page
+  useEffect(() => {
+    resetScroll();
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as any });
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+
+    const timer = setTimeout(() => {
+      resetScroll();
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as any });
+    }, 40);
+    return () => clearTimeout(timer);
+  }, [resetScroll]);
 
   // Extract all unique tech tags for filter pills
   const availableTags = useMemo(() => {
@@ -65,7 +81,7 @@ export const AllProjects: React.FC = () => {
   }, [allProjectsList, searchQuery, selectedTag]);
 
   const handleReturnHome = () => {
-    window.location.href = '/';
+    window.location.hash = '#projects';
   };
 
   return (

@@ -123,11 +123,81 @@ export const DEFAULT_PROJECTS: ProjectItem[] = [
   }
 ];
 
+/* -----------------------------------------------------------------------------
+   CATEGORY HELPERS
+   ----------------------------------------------------------------------------- */
+
+export function normalizeCategory(category?: string, skillId?: string): 'ai-core' | 'frameworks' | 'engineering' {
+  const cat = (category || '').toLowerCase().trim();
+  const id = (skillId || '').toLowerCase().trim();
+
+  if (cat === 'ai-core' || cat === 'ai core' || cat === 'ai') return 'ai-core';
+  if (cat === 'frameworks' || cat === 'framework') return 'frameworks';
+  if (cat === 'engineering' || cat === 'apis & backend' || cat === 'backend' || cat === 'apis and backend') return 'engineering';
+
+  // Specific skill IDs
+  if (['ai-agents', 'gen-ai', 'ai-chatbots', 'llm'].includes(id)) return 'ai-core';
+  if (['langchain', 'langgraph'].includes(id)) return 'frameworks';
+  if (['workflow-auto', 'workflow-automation', 'fastapi', 'python'].includes(id)) return 'engineering';
+
+  // Keyword match
+  if (
+    cat.includes('agent') ||
+    cat.includes('core') ||
+    cat.includes('model') ||
+    cat.includes('multimodal') ||
+    cat.includes('conversational') ||
+    cat.includes('intelligence') ||
+    cat.includes('llm') ||
+    cat.includes('ai')
+  ) {
+    return 'ai-core';
+  }
+
+  if (
+    cat.includes('orchestrat') ||
+    cat.includes('graph') ||
+    cat.includes('framework') ||
+    (cat.includes('workflow') && !cat.includes('automation') && !cat.includes('enterprise'))
+  ) {
+    return 'frameworks';
+  }
+
+  if (
+    cat.includes('backend') ||
+    cat.includes('api') ||
+    cat.includes('integration') ||
+    cat.includes('script') ||
+    cat.includes('python') ||
+    cat.includes('automation') ||
+    cat.includes('engineering')
+  ) {
+    return 'engineering';
+  }
+
+  return 'ai-core';
+}
+
+export function getCategoryLabel(categoryKey: string): string {
+  switch (categoryKey) {
+    case 'ai-core':
+      return 'AI Core';
+    case 'frameworks':
+      return 'Frameworks';
+    case 'engineering':
+      return 'APIs & Backend';
+    default:
+      return categoryKey;
+  }
+}
+
 export const DEFAULT_SKILLS: SkillItem[] = [
   {
     id: 'ai-agents',
     name: 'AI Agents',
-    category: 'Core Agentic Architecture',
+    subtitle: 'Autonomous Intelligence',
+    expertise: 'Expertise: 3+ Years',
+    category: 'ai-core',
     description: 'autonomous task execution, reasoning, tool use, decision-making, and multi-step problem solving.',
     useCases: [
       'Multi-step autonomous workflow execution',
@@ -157,7 +227,9 @@ export const DEFAULT_SKILLS: SkillItem[] = [
   {
     id: 'langchain',
     name: 'LangChain',
-    category: 'LLM Orchestration',
+    subtitle: 'LLM Application Development',
+    expertise: 'Expertise: 2+ Years',
+    category: 'frameworks',
     description: 'LLM integration, prompt engineering, tool/function calling, RAG, and agent development.',
     useCases: [
       'LLM integration & model abstraction',
@@ -186,7 +258,9 @@ export const DEFAULT_SKILLS: SkillItem[] = [
   {
     id: 'langgraph',
     name: 'LangGraph',
-    category: 'Stateful Agent Workflows',
+    subtitle: 'Multi-Agent Orchestration',
+    expertise: 'Expertise: 2+ Years',
+    category: 'frameworks',
     description: 'stateful workflows, multi-agent orchestration, conditional branching, loops, and human-in-the-loop systems.',
     useCases: [
       'Stateful graph-based agent workflows',
@@ -215,7 +289,9 @@ app = workflow.compile(checkpointer=MemorySaver())`
   {
     id: 'workflow-auto',
     name: 'Workflow Automation',
-    category: 'Enterprise Integration',
+    subtitle: 'Process Intelligence',
+    expertise: 'Expertise: 3+ Years',
+    category: 'engineering',
     description: 'API integrations, webhooks, event-driven workflows, task orchestration, and process automation.',
     useCases: [
       'API integrations & custom endpoints',
@@ -246,7 +322,9 @@ async function process_payload(payload: EventPayload):
   {
     id: 'gen-ai',
     name: 'Generative AI',
-    category: 'Multimodal AI Development',
+    subtitle: 'Foundation & Diffusion Models',
+    expertise: 'Expertise: 3+ Years',
+    category: 'ai-core',
     description: 'text generation, content creation, embeddings, multimodal AI, and AI application development.',
     useCases: [
       'Text generation & intelligent content creation',
@@ -275,7 +353,9 @@ async function process_payload(payload: EventPayload):
   {
     id: 'fastapi',
     name: 'FastAPI',
-    category: 'High-Performance Backends',
+    subtitle: 'High-Performance APIs',
+    expertise: 'Expertise: 3+ Years',
+    category: 'engineering',
     description: 'REST API development, async services, backend integration, authentication, and high-performance AI endpoints.',
     useCases: [
       'REST API development & OpenAPI docs',
@@ -303,7 +383,9 @@ async def predict(data: Payload = Depends()):
   {
     id: 'ai-chatbots',
     name: 'AI Chatbots',
-    category: 'Conversational Intelligence',
+    subtitle: 'Conversational Intelligence',
+    expertise: 'Expertise: 3+ Years',
+    category: 'ai-core',
     description: 'conversational AI, memory, RAG-based responses, tool integration, and customer-support automation.',
     useCases: [
       'Conversational AI & custom personas',
@@ -336,7 +418,9 @@ async def predict(data: Payload = Depends()):
   {
     id: 'python',
     name: 'Python',
-    category: 'Core AI Scripting',
+    subtitle: 'Core Architecture',
+    expertise: 'Expertise: 4+ Years',
+    category: 'engineering',
     description: 'AI/ML development, automation scripting, backend development, API integration, and data processing.',
     useCases: [
       'AI/ML framework development & fine-tuning',
@@ -364,7 +448,9 @@ async def predict(data: Payload = Depends()):
   {
     id: 'llm',
     name: 'LLMs',
-    category: 'Language Model Engineering',
+    subtitle: 'Model Tuning & Prompting',
+    expertise: 'Expertise: 3+ Years',
+    category: 'ai-core',
     description: 'prompt design, context management, model integration, structured outputs, and inference optimization.',
     useCases: [
       'Prompt design & meta-prompting',
@@ -435,7 +521,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [skills, setSkills] = useState<SkillItem[]>(() => {
     try {
       const saved = localStorage.getItem('asad_portfolio_skills');
-      return saved ? JSON.parse(saved) : DEFAULT_SKILLS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((s: SkillItem) => {
+            const def = DEFAULT_SKILLS.find(d => d.id === s.id);
+            return {
+              ...def,
+              ...s,
+              category: normalizeCategory(s.category, s.id),
+              subtitle: s.subtitle || def?.subtitle || 'AI Technology',
+              expertise: s.expertise || def?.expertise || 'Expertise: 3+ Years'
+            };
+          });
+        }
+      }
+      return DEFAULT_SKILLS;
     } catch {
       return DEFAULT_SKILLS;
     }

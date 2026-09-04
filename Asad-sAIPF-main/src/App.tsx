@@ -39,6 +39,7 @@ function AppRouter() {
   const [currentPath, setCurrentPath] = useState(typeof window !== 'undefined' ? window.location.pathname : '/');
   const [currentHash, setCurrentHash] = useState(typeof window !== 'undefined' ? window.location.hash : '');
   const [isAdminAuth, setIsAdminAuth] = useState(false);
+  const { resetScroll } = useScrollSystem();
 
   useEffect(() => {
     const checkRoute = () => {
@@ -57,6 +58,13 @@ function AppRouter() {
       window.removeEventListener('hashchange', checkRoute);
     };
   }, []);
+
+  // Automatically reset scroll to top when navigating to full pages like All Projects or Admin
+  useEffect(() => {
+    if (currentHash === '#all-projects' || currentHash === '#projects-all' || currentPath === '/projects' || currentPath === '/admin' || currentHash === '#admin') {
+      resetScroll();
+    }
+  }, [currentPath, currentHash, resetScroll]);
 
   const isAdminPath = currentPath === '/admin' || currentHash === '#admin';
   const isAllProjectsPath = currentPath === '/projects' || currentHash === '#all-projects' || currentHash === '#projects-all';
